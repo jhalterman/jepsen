@@ -16,7 +16,8 @@
   (:require [clojure.stacktrace :as trace]
             [knossos.core :as knossos]
             [jepsen.util :as util :refer [with-thread-name
-                                          relative-time-nanos]]
+                                          relative-time-nanos
+                                          timestamp]]
             [jepsen.os :as os]
             [jepsen.db :as db]
             [jepsen.control :as control]
@@ -120,9 +121,9 @@
         (loop [process process]
           ; Obtain an operation to execute
           (when-let [op (generator/op gen test process)]
-            (let [op (assoc op
-                            :process process
-                            :time    (relative-time-nanos))]
+            (let [op (assoc op :process process
+                               :ts (timestamp)
+                               :time (relative-time-nanos))]
               ; Log invocation
               (util/log-op op)
               (conj-op! test op)
@@ -131,7 +132,8 @@
                 (try
                   ; Evaluate operation
                   (let [completion (-> (client/invoke! client test op)
-                                       (assoc :time (relative-time-nanos)))]
+                                       (assoc :ts (timestamp)
+                                              :time (relative-time-nanos)))]
                     (util/log-op completion)
 
                     ; Sanity check
@@ -160,6 +162,7 @@
                     ; and leave the invocation uncompleted in the history.
                     (conj-op! test (assoc op
                                           :type :info
+                                          :ts (timestamp)
                                           :time  (relative-time-nanos)
                                           :value (str "indeterminate: "
                                                       (if (.getCause t)

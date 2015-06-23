@@ -4,6 +4,7 @@
             [clojure.core.reducers :as r]
             [clojure.string :as str]
             [clj-time.core :as time]
+            [clj-time.coerce :as time.coerce]
             [clj-time.local :as time.local]
             [knossos.history :as history])
   (:import (java.util.concurrent.locks LockSupport)))
@@ -29,7 +30,8 @@
 (defn op->str
   "Format an operation as a string."
   [op]
-  (str (:process op)         \tab
+  (str (time.coerce/from-long (:ts op)) \tab
+       (:process op)         \tab
        (:type op)            \tab
        (pr-str (:f op))      \tab
        (pr-str (:value op))
@@ -117,6 +119,11 @@
   [& body]
   `(binding [*relative-time-origin* (linear-time-nanos)]
      ~@body))
+
+(defn timestamp
+  "Grabs the current timestamp as milliseconds since epoch"
+  []
+  (System/currentTimeMillis))
 
 (defn relative-time-nanos
   "Time in nanoseconds since *relative-time-origin*"
